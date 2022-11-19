@@ -1,4 +1,4 @@
-# The Elixir Accompanying Manual
+# The Elixir Operating Manual Repository
 The repository for the Elixir Operating Manual Book being written at [Pagespace.app](https://pagespace.app)
 
 ## WIP
