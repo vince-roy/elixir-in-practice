@@ -39,6 +39,5 @@ test:
     RUN docker-compose up -d & \
           while ! pg_isready --host=localhost --port=5432 --quiet; do sleep 1; done; \
           DATABASE_URL="ecto://postgres:postgres@localhost/test" \
-          SECRET_KEY_BASE=$(mix phx.gen.secret) \
           mix test 
   END
