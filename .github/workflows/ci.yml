@@ -1,5 +1,4 @@
 name: CI
-
 on:
   push:
     branches: [main]
@@ -10,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       GHCR_USERNAME: ${{ github.actor }}
-      GHCR_TOKEN: ${{ secrets.CR_PAT }}
+      GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       FORCE_COLOR: 1
     steps:
       - uses: actions/checkout@v2
