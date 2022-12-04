@@ -17,14 +17,17 @@ config :one, One.Repo,
 # you can enable the server option below.
 config :one, OneWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
-  secret_key_base: "hh9o1sxCVWWbCziSLVor81fTuJUHD7/vhu0n0sjgYKOpfWgZmeJTvAkVSMJguw4M",
+  secret_key_base: "ydnZLMIom630qLnveUaAWE+sb/HV9PTRyZ+P1BWZY1t8gyD1Zxc+DBvconHhX3Od",
   server: false
 
 # In test we don't send emails.
 config :one, One.Mailer, adapter: Swoosh.Adapters.Test
 
+# Disable swoosh api client as it is only required for production adapters.
+config :swoosh, :api_client, false
+
 # Print only warnings and errors during test
-config :logger, level: :warn
+config :logger, level: :warning
 
 # Initialize plugs at runtime for faster test compilation
 config :phoenix, :plug_init_mode, :runtime

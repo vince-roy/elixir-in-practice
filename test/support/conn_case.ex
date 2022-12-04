@@ -19,15 +19,15 @@ defmodule OneWeb.ConnCase do
 
   using do
     quote do
+      # The default endpoint for testing
+      @endpoint OneWeb.Endpoint
+
+      use OneWeb, :verified_routes
+
       # Import conveniences for testing with connections
       import Plug.Conn
       import Phoenix.ConnTest
       import OneWeb.ConnCase
-
-      alias OneWeb.Router.Helpers, as: Routes
-
-      # The default endpoint for testing
-      @endpoint OneWeb.Endpoint
     end
   end
 
