@@ -26,7 +26,7 @@ code-style-and-security:
 
 test:
   FROM +deps
-  RUN apk add --no-progress --update docker docker-compose bash postgresql-client
+  RUN apk add --no-progress --update docker docker-compose bash postgresql-client jq
   COPY ./docker-compose.yml ./docker-compose.yml
   COPY --dir config lib priv test .
   RUN DATABASE_URL="ecto://postgres:postgres@localhost/test" MIX_ENV=test mix compile
