@@ -29,5 +29,9 @@ jobs:
       - name: Run test and build
         run: |
           earthly -P \
+          --verbose \
+          --REPO_NAME=$GITHUB_REPOSITORY_OWNER \
+          --REPO_OWNER=${{ github.event.repository.name }} \
+          --GITHUB_EVENT_TYPE=${{github.event.action}} \
+          --PR_NUMBER=${{github.event.number}} \
           --push +all
-      
