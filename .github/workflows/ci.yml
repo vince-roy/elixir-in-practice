@@ -50,7 +50,15 @@ jobs:
           --REPO_OWNER=$GITHUB_REPOSITORY_OWNER \
           --GITHUB_EVENT_TYPE=${{github.event.action}} \
           --GITHUB_PR_NUMBER=${{github.event.number}} 
-      - uses: mshick/add-pr-comment@v2
-        with:
-          message: |
-            [pr-${{github.event.number}}-${{ github.repository_owner }}-${{ github.event.repository.name }}.fly.dev](pr-${{github.event.number}}-${{github.repository_owner}}-${{ github.event.repository.name }}.fly.dev)
+
+expose-preview-url:
+  runs-on: ubuntu-latest
+  permissions:
+    pull-requests: write
+  if: |
+    github.event.action == 'opened'
+  steps:
+    - uses: mshick/add-pr-comment@v2
+      with:
+        message: |
+          [pr-${{github.event.number}}-${{ github.repository_owner }}-${{ github.event.repository.name }}.fly.dev](https://pr-${{github.event.number}}-${{github.repository_owner}}-${{ github.event.repository.name }}.fly.dev)
