@@ -62,10 +62,8 @@ docker:
 release:
   FROM +deps
   COPY --dir config priv assets lib ./
-  IF [! "$GITHUB_EVENT_TYPE" = "closed" ]
-    RUN mix assets.deploy
-    RUN MIX_ENV=prod mix do compile, release
-  END
+  RUN mix assets.deploy
+  RUN MIX_ENV=prod mix do compile, release
   SAVE ARTIFACT _build/prod AS LOCAL _build/prod
 
 test:
