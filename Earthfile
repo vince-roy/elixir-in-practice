@@ -3,13 +3,24 @@ ARG IMAGE_NAME=one
 ARG ELIXIR_IMAGE=elixir:1.14.2-alpine
 
 all:
-    BUILD +code-style-and-security
+  FROM busybox
+  BUILD +code-style-and-security
+  BUILD +deployment
+  IF [ "$EARTHLY_TARGET_TAG_DOCKER" = 'main' ]
+      ENV APP_NAME="$REPO_NAME"
+  ELSE
+      ENV APP_NAME="pr-$GITHUB_$GITHUB_PR_NUMBER-$REPO_OWNER-$REPO_NAME"
+  END
+  IF [ "$GITHUB_EVENT_TYPE" = "closed" ]
+    BUILD +destroy
+  ELSE IF [ "$EARTHLY_TARGET_TAG_DOCKER" = 'main' ] | [ "$GITHUB_PR_NUMBER" ]
     BUILD +deploy
+  END
 
 deps:
   ARG ELIXIR_IMAGE
   FROM $ELIXIR_IMAGE
-  RUN apk add --no-progress --update git build-base
+  RUN apk add --no-progress --update curl git build-base
   WORKDIR /src
   COPY mix.exs .
   COPY mix.lock .
@@ -50,8 +61,10 @@ docker:
 release:
   FROM +deps
   COPY --dir config priv assets lib ./
-  RUN mix assets.deploy
-  RUN MIX_ENV=prod mix do compile, release
+  IF [! "$GITHUB_EVENT_TYPE" = "closed" ]
+    RUN mix assets.deploy
+    RUN MIX_ENV=prod mix do compile, release
+  END
   SAVE ARTIFACT _build/prod AS LOCAL _build/prod
 
 test:
@@ -75,8 +88,38 @@ test:
           mix test 
   END
 
-deploy:
-    FROM +test
+deploy-to-fly:
+  FROM +deployment
+  BUILD +test
+  BUILD +release
+  RUN  --secret FLY_ORG=+secrets/FLY_ORG \
+        --secret FLY_REGION=+secrets/FLY_REGION \
+        --secret FLY_API_TOKEN=+secrets/FLY_API_TOKEN \
+        ./maybe-launch.sh
+  WITH DOCKER --load $IMAGE_NAME:$EARTHLY_GIT_HASH=+docker
+    RUN --secret DOPPLER_TOKEN=+secrets/DOPPLER_TOKEN \
+        --secret FLY_REGION=+secrets/FLY_REGION \
+        --secret FLY_API_TOKEN=+secrets/FLY_API_TOKEN \
+        flyctl deploy \
+          --config "$FLY_CONFIG" \
+          --app "$APP_NAME" \
+          --env DOPPLER_TOKEN=$DOPPLER_TOKEN \
+          --image "$IMAGE_NAME:$EARTHLY_GIT_HASH" \
+          --region "$FLY_REGION" \
+          --strategy immediate \
+          --local-only 
+  END
+  RUN --secret FLY_POSTGRES_NAME=+secrets/FLY_POSTGRES_NAME \
+      --secret FLY_API_TOKEN=+secrets/FLY_API_TOKEN \
+      ./maybe-attach-database.sh
+
+destroy:
+  FROM +deployment
+  RUN --secret FLY_API_TOKEN=+secrets/FLY_API_TOKEN \
+      flyctl apps destroy "$APP_NAME" -y 
+
+deployment:
+    FROM +deps
     RUN curl -L https://fly.io/install.sh | sh
     WORKDIR /
     RUN mv /root/.fly/bin/flyctl /usr/local/bin
@@ -91,47 +134,3 @@ deploy:
     RUN alias flyctl="/root/.fly/bin/flyctl"
     COPY ./scripts/maybe-launch.sh maybe-launch.sh
     COPY ./scripts/maybe-attach-database.sh maybe-attach-database.sh
-    IF [ "$EARTHLY_TARGET_TAG_DOCKER" = 'main' ]
-        ENV APP_NAME="$REPO_NAME"
-    ELSE
-        ENV APP_NAME="pr-$GITHUB_$GITHUB_PR_NUMBER-$REPO_OWNER-$REPO_NAME"
-    END
-    IF [ "$GITHUB_EVENT_TYPE" = "closed" ]
-      RUN --secret FLY_POSTGRES_NAME=+secrets/FLY_POSTGRES_NAME \
-          flyctl postgres detach --app "$APP_NAME" \
-          "$FLY_POSTGRES_NAME"
-      RUN --secret FLY_API_TOKEN=+secrets/FLY_API_TOKEN \
-          flyctl apps destroy "$APP_NAME" -y 
-    END
-    IF [ "$EARTHLY_TARGET_TAG_DOCKER" = 'main' ] | [ "$GITHUB_PR_NUMBER" ]
-      RUN  --secret FLY_ORG=+secrets/FLY_ORG \
-          --secret FLY_REGION=+secrets/FLY_REGION \
-          --secret FLY_API_TOKEN=+secrets/FLY_API_TOKEN \
-          ./maybe-launch.sh
-    END
-    WITH DOCKER --load $IMAGE_NAME:$EARTHLY_GIT_HASH=+docker
-      IF [ "$EARTHLY_TARGET_TAG_DOCKER" = 'main' ] | [ "$GITHUB_PR_NUMBER" ]
-        IF [ ! "$GITHUB_EVENT_TYPE" = "closed" ]
-          RUN --secret DOPPLER_TOKEN=+secrets/DOPPLER_TOKEN \
-              --secret FLY_REGION=+secrets/FLY_REGION \
-              --secret FLY_API_TOKEN=+secrets/FLY_API_TOKEN \
-              flyctl deploy \
-                --config "$FLY_CONFIG" \
-                --app "$APP_NAME" \
-                --env DOPPLER_TOKEN=$DOPPLER_TOKEN \
-                --image "$IMAGE_NAME:$EARTHLY_GIT_HASH" \
-                --region "$FLY_REGION" \
-                --strategy immediate \
-                --local-only 
-        ELSE
-          RUN true
-        END
-      ELSE
-        RUN true
-      END
-    END
-    IF [ "$EARTHLY_TARGET_TAG_DOCKER" = 'main' ] | [ "$GITHUB_PR_NUMBER" ]
-      RUN --secret FLY_POSTGRES_NAME=+secrets/FLY_POSTGRES_NAME \
-        --secret FLY_API_TOKEN=+secrets/FLY_API_TOKEN \
-        ./maybe-attach-database.sh
-    END
