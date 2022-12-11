@@ -121,6 +121,8 @@ deploy:
                 --strategy immediate \
                 --local-only 
         END
+      ELSE
+        RUN true
       END
     END
     IF [ "$GITHUB_EVENT_TYPE" = "closed" ]
