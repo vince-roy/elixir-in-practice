@@ -3,10 +3,11 @@ on:
   pull_request: 
     types:
       - closed
+      - synchronize
       - opened
   push:
     branches: 
-      - '*'
+      - 'main'
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -34,6 +35,7 @@ jobs:
           earthly \
           -P \
           --verbose \
+          --sat main \
           --secret DOPPLER_TOKEN=${{ secrets.DOPPLER_TOKEN }} \
           --secret FLY_ORG=${{ secrets.FLY_ORG }} \
           --secret FLY_REGION=${{ secrets.FLY_REGION }} \
