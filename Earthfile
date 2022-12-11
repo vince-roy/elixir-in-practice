@@ -118,7 +118,6 @@ deploy:
                 --env DOPPLER_TOKEN=$DOPPLER_TOKEN \
                 --image "$IMAGE_NAME:$EARTHLY_GIT_HASH" \
                 --region "$FLY_REGION" \
-                --strategy immediate \
                 --local-only 
         END
       ELSE
