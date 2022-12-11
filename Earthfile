@@ -107,8 +107,8 @@ deploy:
           ./maybe-launch.sh
     END
     WITH DOCKER --load $IMAGE_NAME:$EARTHLY_GIT_HASH=+docker
-      IF [ ! "$GITHUB_EVENT_TYPE" = "closed" ]
-        IF [ "$EARTHLY_TARGET_TAG_DOCKER" = 'main' ] | [ "$GITHUB_PR_NUMBER" ]
+      IF [ "$EARTHLY_TARGET_TAG_DOCKER" = 'main' ] | [ "$GITHUB_PR_NUMBER" ]
+        IF [ ! "$GITHUB_EVENT_TYPE" = "closed" ]
           RUN --secret DOPPLER_TOKEN=+secrets/DOPPLER_TOKEN \
               --secret FLY_REGION=+secrets/FLY_REGION \
               --secret FLY_API_TOKEN=+secrets/FLY_API_TOKEN \
@@ -123,11 +123,11 @@ deploy:
         END
       END
     END
-    IF [ "$GITHUB_EVENT_TYPE" = "closed" ] 
+    IF [ "$GITHUB_EVENT_TYPE" = "closed" ]
       RUN --secret FLY_POSTGRES_NAME=+secrets/FLY_POSTGRES_NAME \
           flyctl postgres detach --app "$APP_NAME" \
           "$FLY_POSTGRES_NAME"
-    ELSE
+    ELSE IF [ "$EARTHLY_TARGET_TAG_DOCKER" = 'main' ] | [ "$GITHUB_PR_NUMBER" ]
       RUN --secret FLY_POSTGRES_NAME=+secrets/FLY_POSTGRES_NAME \
         --secret FLY_API_TOKEN=+secrets/FLY_API_TOKEN \
         ./maybe-attach-database.sh
