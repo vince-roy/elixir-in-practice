@@ -5,7 +5,8 @@ ARG ELIXIR_IMAGE=elixir:1.14.2-alpine
 all:
   FROM busybox
   BUILD +code-style-and-security
-  BUILD +deployment
+  ARG GITHUB_EVENT_TYPE
+  ARG GITHUB_PR_NUMBER
   IF [ "$EARTHLY_TARGET_TAG_DOCKER" = 'main' ]
       ENV APP_NAME="$REPO_NAME"
   ELSE
