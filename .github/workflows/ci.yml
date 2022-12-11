@@ -14,6 +14,7 @@ jobs:
     permissions:
       pull-requests: write
     env:
+      GITHUB_REPOSITORY_OWNER: $GITHUB_REPOSITORY_OWNER
       GHCR_USERNAME: ${{ github.actor }}
       GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       EARTHLY_TOKEN: ${{ secrets.EARTHLY_TOKEN }}
@@ -52,4 +53,4 @@ jobs:
       - uses: mshick/add-pr-comment@v2
         with:
           message: |
-            [pr-${{github.event.number}}-${{ env.GITHUB_REPOSITORY_OWNER }}-${{ github.event.repository.name }}.fly.dev](pr-${{github.event.number}}-$GITHUB_REPOSITORY_OWNER-${{ github.event.repository.name }}.fly.dev)
+            [pr-${{github.event.number}}-${{ github.repository_owner }}-${{ github.event.repository.name }}.fly.dev](pr-${{github.event.number}}-${{github.repository_owner}}-${{ github.event.repository.name }}.fly.dev)
