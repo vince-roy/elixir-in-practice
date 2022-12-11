@@ -1,15 +1,20 @@
 name: CI
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  pull_request: 
+    types:
+      - closed
+      - synchronize
+      - opened
+  # push:
+  #   branches: 
+  #     - 'main'
 jobs:
   build:
     runs-on: ubuntu-latest
     env:
       GHCR_USERNAME: ${{ github.actor }}
       GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      EARTHLY_TOKEN: ${{ secrets.EARTHLY_TOKEN }}
       FORCE_COLOR: 1
     steps:
       - uses: actions/checkout@v2
@@ -28,10 +33,17 @@ jobs:
         run: "sudo /bin/sh -c 'wget https://github.com/earthly/earthly/releases/latest/download/earthly-linux-amd64 -O /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly'"
       - name: Run test and build
         run: |
-          earthly -P \
+          earthly \
+          -P \
           --verbose \
-          --REPO_NAME=$GITHUB_REPOSITORY_OWNER \
-          --REPO_OWNER=${{ github.event.repository.name }} \
+          --sat main \
+          --secret DOPPLER_TOKEN=${{ secrets.DOPPLER_TOKEN }} \
+          --secret FLY_ORG=${{ secrets.FLY_ORG }} \
+          --secret FLY_REGION=${{ secrets.FLY_REGION }} \
+          --secret FLY_API_TOKEN=${{ secrets.FLY_API_TOKEN }} \
+          --secret FLY_POSTGRES_NAME=${{ secrets.FLY_POSTGRES_NAME }} \
+          --push +all \
+          --REPO_NAME=${{ github.event.repository.name }} \
+          --REPO_OWNER=$GITHUB_REPOSITORY_OWNER \
           --GITHUB_EVENT_TYPE=${{github.event.action}} \
-          --PR_NUMBER=${{github.event.number}} \
-          --push +all
+          --GITHUB_PR_NUMBER=${{github.event.number}} 
