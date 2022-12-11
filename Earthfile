@@ -97,6 +97,9 @@ deploy:
         ENV APP_NAME="pr-$GITHUB_$GITHUB_PR_NUMBER-$REPO_OWNER-$REPO_NAME"
     END
     IF [ "$GITHUB_EVENT_TYPE" = "closed" ]
+      RUN --secret FLY_POSTGRES_NAME=+secrets/FLY_POSTGRES_NAME \
+          flyctl postgres detach --app "$APP_NAME" \
+          "$FLY_POSTGRES_NAME"
       RUN --secret FLY_API_TOKEN=+secrets/FLY_API_TOKEN \
           flyctl apps destroy "$APP_NAME" -y 
     END
@@ -120,16 +123,14 @@ deploy:
                 --region "$FLY_REGION" \
                 --strategy immediate \
                 --local-only 
+        ELSE
+          RUN true
         END
       ELSE
         RUN true
       END
     END
-    IF [ "$GITHUB_EVENT_TYPE" = "closed" ]
-      RUN --secret FLY_POSTGRES_NAME=+secrets/FLY_POSTGRES_NAME \
-          flyctl postgres detach --app "$APP_NAME" \
-          "$FLY_POSTGRES_NAME"
-    ELSE IF [ "$EARTHLY_TARGET_TAG_DOCKER" = 'main' ] | [ "$GITHUB_PR_NUMBER" ]
+    IF [ "$EARTHLY_TARGET_TAG_DOCKER" = 'main' ] | [ "$GITHUB_PR_NUMBER" ]
       RUN --secret FLY_POSTGRES_NAME=+secrets/FLY_POSTGRES_NAME \
         --secret FLY_API_TOKEN=+secrets/FLY_API_TOKEN \
         ./maybe-attach-database.sh
