@@ -4,7 +4,9 @@ on:
     types:
       - closed
       - opened
-  push
+  push:
+    branches: 
+      - *
 jobs:
   build:
     runs-on: ubuntu-latest
