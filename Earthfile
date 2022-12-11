@@ -4,14 +4,11 @@ ARG ELIXIR_IMAGE=elixir:1.14.2-alpine
 
 all:
   FROM busybox
-  BUILD +code-style-and-security
+  IF [! "$GITHUB_EVENT_TYPE" = "closed" ]
+    BUILD +code-style-and-security
+  END
   ARG GITHUB_EVENT_TYPE
   ARG GITHUB_PR_NUMBER
-  IF [ "$EARTHLY_TARGET_TAG_DOCKER" = 'main' ]
-      ENV APP_NAME="$REPO_NAME"
-  ELSE
-      ENV APP_NAME="pr-$GITHUB_$GITHUB_PR_NUMBER-$REPO_OWNER-$REPO_NAME"
-  END
   IF [ "$GITHUB_EVENT_TYPE" = "closed" ]
     BUILD +destroy
   ELSE IF [ "$EARTHLY_TARGET_TAG_DOCKER" = 'main' ] | [ "$GITHUB_PR_NUMBER" ]
@@ -33,11 +30,11 @@ deps:
   RUN mix deps.compile
 
 code-style-and-security:
-    FROM +deps
-    COPY --dir config lib priv test .credo.exs .formatter.exs .
-    RUN MIX_ENV=test mix credo --strict && \
-        MIX_ENV=test mix format --check-formatted
-    RUN MIX_ENV=test mix deps.audit 
+  FROM +deps
+  COPY --dir config lib priv test .credo.exs .formatter.exs .
+  RUN MIX_ENV=test mix credo --strict && \
+      MIX_ENV=test mix format --check-formatted
+  RUN MIX_ENV=test mix deps.audit 
 
 docker: 
   FROM alpine:3.16
@@ -88,9 +85,32 @@ test:
   END
 
 deploy-to-fly:
-  FROM +deployment
-  BUILD +test
-  BUILD +release
+  FROM +test
+  RUN curl -L https://fly.io/install.sh | sh
+  WORKDIR /
+  RUN mv /root/.fly/bin/flyctl /usr/local/bin
+  COPY fly.toml .
+  ARG FLY_CONFIG="./fly.toml"
+  ARG GITHUB_EVENT_TYPE
+  ARG GITHUB_PR_NUMBER
+  ARG --required REPO_NAME
+  ARG --required REPO_OWNER
+  ARG EARTHLY_GIT_HASH
+  ARG FLY_POSTGRES_ENABLED=true
+  RUN alias flyctl="/root/.fly/bin/flyctl"
+  COPY ./scripts/maybe-launch.sh maybe-launch.sh
+  COPY ./scripts/maybe-attach-database.sh maybe-attach-database.sh
+  ARG GITHUB_EVENT_TYPE
+  ARG GITHUB_PR_NUMBER
+  ARG --required REPO_NAME
+  ARG --required REPO_OWNER
+  ARG EARTHLY_GIT_HASH
+  ARG FLY_POSTGRES_ENABLED=true
+  IF [ "$EARTHLY_TARGET_TAG_DOCKER" = 'main' ]
+    ENV APP_NAME="$REPO_NAME"
+  ELSE
+    ENV APP_NAME="pr-$GITHUB_$GITHUB_PR_NUMBER-$REPO_OWNER-$REPO_NAME"
+  END
   RUN  --secret FLY_ORG=+secrets/FLY_ORG \
         --secret FLY_REGION=+secrets/FLY_REGION \
         --secret FLY_API_TOKEN=+secrets/FLY_API_TOKEN \
@@ -113,23 +133,16 @@ deploy-to-fly:
       ./maybe-attach-database.sh
 
 destroy:
-  FROM +deployment
+  FROM alpine:3.16
+  RUN apk add curl
+  RUN curl -L https://fly.io/install.sh | sh
+  ARG GITHUB_PR_NUMBER
+  ARG --required REPO_NAME
+  ARG --required REPO_OWNER
+  IF [ "$EARTHLY_TARGET_TAG_DOCKER" = 'main' ]
+    ENV APP_NAME="$REPO_NAME"
+  ELSE
+    ENV APP_NAME="pr-$GITHUB_$GITHUB_PR_NUMBER-$REPO_OWNER-$REPO_NAME"
+  END
   RUN --secret FLY_API_TOKEN=+secrets/FLY_API_TOKEN \
-      flyctl apps destroy "$APP_NAME" -y 
-
-deployment:
-    FROM +deps
-    RUN curl -L https://fly.io/install.sh | sh
-    WORKDIR /
-    RUN mv /root/.fly/bin/flyctl /usr/local/bin
-    COPY fly.toml .
-    ARG FLY_CONFIG="./fly.toml"
-    ARG GITHUB_EVENT_TYPE
-    ARG GITHUB_PR_NUMBER
-    ARG --required REPO_NAME
-    ARG --required REPO_OWNER
-    ARG EARTHLY_GIT_HASH
-    ARG FLY_POSTGRES_ENABLED=true
-    RUN alias flyctl="/root/.fly/bin/flyctl"
-    COPY ./scripts/maybe-launch.sh maybe-launch.sh
-    COPY ./scripts/maybe-attach-database.sh maybe-attach-database.sh
+      /root/.fly/bin/flyctl apps destroy "$APP_NAME" -y 
