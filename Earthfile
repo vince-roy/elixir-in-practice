@@ -15,7 +15,7 @@ all:
   IF [ "$GITHUB_EVENT_TYPE" = "closed" ]
     BUILD +destroy
   ELSE IF [ "$EARTHLY_TARGET_TAG_DOCKER" = 'main' ] | [ "$GITHUB_PR_NUMBER" ]
-    BUILD +deploy
+    BUILD +deploy-to-fly
   END
 
 deps:
