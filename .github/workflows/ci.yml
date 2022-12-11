@@ -52,4 +52,4 @@ jobs:
       - uses: mshick/add-pr-comment@v2
         with:
           message: |
-            [pr-${{github.event.number}}-$GITHUB_REPOSITORY_OWNER-${{ github.event.repository.name }}.fly.dev](pr-${{github.event.number}}-$GITHUB_REPOSITORY_OWNER-${{ github.event.repository.name }}.fly.dev)
+            [pr-${{github.event.number}}-${GITHUB_REPOSITORY_OWNER}-${{ github.event.repository.name }}.fly.dev](pr-${{github.event.number}}-$GITHUB_REPOSITORY_OWNER-${{ github.event.repository.name }}.fly.dev)
