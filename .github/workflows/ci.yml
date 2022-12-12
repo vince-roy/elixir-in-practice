@@ -11,7 +11,10 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
     env:
+      GITHUB_REPOSITORY_OWNER: $GITHUB_REPOSITORY_OWNER
       GHCR_USERNAME: ${{ github.actor }}
       GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       EARTHLY_TOKEN: ${{ secrets.EARTHLY_TOKEN }}
@@ -47,3 +50,14 @@ jobs:
           --REPO_OWNER=$GITHUB_REPOSITORY_OWNER \
           --GITHUB_EVENT_TYPE=${{github.event.action}} \
           --GITHUB_PR_NUMBER=${{github.event.number}} 
+  expose-preview-url:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    if: |
+      github.event.action == 'opened'
+    steps:
+      - uses: mshick/add-pr-comment@v2
+        with:
+          message: |
+            [pr-${{github.event.number}}-${{ github.repository_owner }}-${{ github.event.repository.name }}.fly.dev](https://pr-${{github.event.number}}-${{github.repository_owner}}-${{ github.event.repository.name }}.fly.dev)

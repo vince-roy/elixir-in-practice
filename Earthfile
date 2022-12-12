@@ -109,7 +109,7 @@ deploy-to-fly:
   IF [ "$EARTHLY_TARGET_TAG_DOCKER" = 'main' ]
     ENV APP_NAME="$REPO_NAME"
   ELSE
-    ENV APP_NAME="pr-$GITHUB_$GITHUB_PR_NUMBER-$REPO_OWNER-$REPO_NAME"
+    ENV APP_NAME="pr-$GITHUB_PR_NUMBER-$REPO_OWNER-$REPO_NAME"
   END
   RUN  --secret FLY_ORG=+secrets/FLY_ORG \
         --secret FLY_REGION=+secrets/FLY_REGION \
@@ -142,7 +142,7 @@ destroy:
   IF [ "$EARTHLY_TARGET_TAG_DOCKER" = 'main' ]
     ENV APP_NAME="$REPO_NAME"
   ELSE
-    ENV APP_NAME="pr-$GITHUB_$GITHUB_PR_NUMBER-$REPO_OWNER-$REPO_NAME"
+    ENV APP_NAME="pr-$GITHUB_PR_NUMBER-$REPO_OWNER-$REPO_NAME"
   END
   RUN --secret FLY_API_TOKEN=+secrets/FLY_API_TOKEN \
       /root/.fly/bin/flyctl apps destroy "$APP_NAME" -y 
