@@ -95,17 +95,10 @@ deploy-to-fly:
   ARG GITHUB_PR_NUMBER
   ARG --required REPO_NAME
   ARG --required REPO_OWNER
-  ARG EARTHLY_GIT_HASH
   ARG FLY_POSTGRES_ENABLED=true
   RUN alias flyctl="/root/.fly/bin/flyctl"
   COPY ./scripts/maybe-launch.sh maybe-launch.sh
   COPY ./scripts/maybe-attach-database.sh maybe-attach-database.sh
-  ARG GITHUB_EVENT_TYPE
-  ARG GITHUB_PR_NUMBER
-  ARG --required REPO_NAME
-  ARG --required REPO_OWNER
-  ARG EARTHLY_GIT_HASH
-  ARG FLY_POSTGRES_ENABLED=true
   IF [ "$EARTHLY_TARGET_TAG_DOCKER" = 'main' ]
     ENV APP_NAME="$REPO_NAME"
   ELSE
