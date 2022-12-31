@@ -101,17 +101,18 @@ deploy-to-fly:
   COPY ./scripts/maybe-attach-database.sh maybe-attach-database.sh
   IF [ "$EARTHLY_TARGET_TAG_DOCKER" = 'main' ]
     ENV APP_NAME="$REPO_NAME"
+    ARG DOPPLER_TOKEN=+secrets/DOPPLER_PRODUCTION_TOKEN
   ELSE
     ENV APP_NAME="pr-$GITHUB_PR_NUMBER-$REPO_OWNER-$REPO_NAME"
+    ARG DOPPLER_TOKEN=+secrets/DOPPLER_PREVIEW_TOKEN
   END
-  RUN  --secret FLY_ORG=+secrets/FLY_ORG \
-        --secret FLY_REGION=+secrets/FLY_REGION \
-        --secret FLY_API_TOKEN=+secrets/FLY_API_TOKEN \
+  RUN  --secret FLY_ORG \
+        --secret FLY_REGION \
+        --secret FLY_API_TOKEN \
         ./maybe-launch.sh
   WITH DOCKER --load $IMAGE_NAME:$EARTHLY_GIT_HASH=+docker
-    RUN --secret DOPPLER_TOKEN=+secrets/DOPPLER_TOKEN \
-        --secret FLY_REGION=+secrets/FLY_REGION \
-        --secret FLY_API_TOKEN=+secrets/FLY_API_TOKEN \
+    RUN --secret FLY_REGION \
+        --secret FLY_API_TOKEN \
         flyctl deploy \
           --config "$FLY_CONFIG" \
           --app "$APP_NAME" \
@@ -121,9 +122,13 @@ deploy-to-fly:
           --strategy immediate \
           --local-only 
   END
-  RUN --secret FLY_POSTGRES_NAME=+secrets/FLY_POSTGRES_NAME \
-      --secret FLY_API_TOKEN=+secrets/FLY_API_TOKEN \
-      ./maybe-attach-database.sh
+  RUN --secret FLY_POSTGRES_NAME \
+      --secret FLY_API_TOKEN \
+      flyctl postgres attach \
+          --app "$APP_NAME" \
+          --database-name "$APP_NAME" \
+          -y \
+          "$FLY_POSTGRES_NAME" || true
 
 destroy:
   FROM alpine:3.16
@@ -137,5 +142,5 @@ destroy:
   ELSE
     ENV APP_NAME="pr-$GITHUB_PR_NUMBER-$REPO_OWNER-$REPO_NAME"
   END
-  RUN --secret FLY_API_TOKEN=+secrets/FLY_API_TOKEN \
+  RUN --secret FLY_API_TOKEN \
       /root/.fly/bin/flyctl apps destroy "$APP_NAME" -y 
