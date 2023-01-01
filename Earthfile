@@ -49,7 +49,7 @@ docker:
   COPY +release/prod/rel/one .
   ENV HOME=/app
   ENV ECTO_IPV6=true
-  ENV DISABLE_REDIS="1"
+  ENV PHX_SERVER=true
   ENV ERL_AFLAGS "-proto_dist inet6_tcp"
   ENV APP_NAME=one
   COPY ./scripts/start-app.sh .
