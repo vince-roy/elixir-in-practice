@@ -30,7 +30,7 @@ jobs:
         run: docker login https://ghcr.io --username "${{ github.actor }}" --password "${{ secrets.GITHUB_TOKEN }}"
       - name: Download latest earthly
         run: |
-          EARTHLY_TOKEN= ${{ secrets.EARTHLY_TOKEN }} sudo /bin/sh -c \
+          EARTHLY_TOKEN=${{ secrets.EARTHLY_TOKEN }} sudo /bin/sh -c \
           'wget https://github.com/earthly/earthly/releases/latest/download/earthly-linux-amd64 -O /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly'"
       - name: Run test and build
         run: |
