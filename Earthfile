@@ -101,26 +101,39 @@ deploy-to-fly:
   COPY ./scripts/maybe-attach-database.sh maybe-attach-database.sh
   IF [ "$EARTHLY_TARGET_TAG_DOCKER" = 'main' ]
     ENV APP_NAME="$REPO_NAME"
-    ARG DOPPLER_TOKEN=+secrets/DOPPLER_PRODUCTION_TOKEN
   ELSE
     ENV APP_NAME="pr-$GITHUB_PR_NUMBER-$REPO_OWNER-$REPO_NAME"
-    ARG DOPPLER_TOKEN=+secrets/DOPPLER_PREVIEW_TOKEN
   END
   RUN  --secret FLY_ORG \
         --secret FLY_REGION \
         --secret FLY_API_TOKEN \
         ./maybe-launch.sh
   WITH DOCKER --load $IMAGE_NAME:$EARTHLY_GIT_HASH=+docker
-    RUN --secret FLY_REGION \
-        --secret FLY_API_TOKEN \
-        flyctl deploy \
-          --config "$FLY_CONFIG" \
-          --app "$APP_NAME" \
-          --env DOPPLER_TOKEN=$DOPPLER_TOKEN \
-          --image "$IMAGE_NAME:$EARTHLY_GIT_HASH" \
-          --region "$FLY_REGION" \
-          --strategy immediate \
-          --local-only 
+    IF [ "$EARTHLY_TARGET_TAG_DOCKER" = 'main' ]
+      RUN --secret FLY_REGION \
+          --secret FLY_API_TOKEN \
+          --secret DOPPLER_PRODUCTION_TOKEN \
+          flyctl deploy \
+            --config "$FLY_CONFIG" \
+            --app "$APP_NAME" \
+            --env DOPPLER_TOKEN=$DOPPLER_PRODUCTION_TOKEN \
+            --image "$IMAGE_NAME:$EARTHLY_GIT_HASH" \
+            --region "$FLY_REGION" \
+            --strategy immediate \
+            --local-only 
+    ELSE
+      RUN --secret FLY_REGION \
+          --secret FLY_API_TOKEN \
+          --secret DOPPLER_PREVIEW_TOKEN \
+          flyctl deploy \
+            --config "$FLY_CONFIG" \
+            --app "$APP_NAME" \
+            --env DOPPLER_TOKEN=$DOPPLER_PREVIEW_TOKEN \
+            --image "$IMAGE_NAME:$EARTHLY_GIT_HASH" \
+            --region "$FLY_REGION" \
+            --strategy immediate \
+            --local-only 
+    END
   END
   RUN --secret FLY_POSTGRES_NAME \
       --secret FLY_API_TOKEN \

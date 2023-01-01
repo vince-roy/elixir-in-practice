@@ -14,10 +14,6 @@ jobs:
     permissions:
       pull-requests: write
     env:
-      GITHUB_REPOSITORY_OWNER: $GITHUB_REPOSITORY_OWNER
-      GHCR_USERNAME: ${{ github.actor }}
-      GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      EARTHLY_TOKEN: ${{ secrets.EARTHLY_TOKEN }}
       FORCE_COLOR: 1
     steps:
       - uses: actions/checkout@v2
@@ -31,16 +27,17 @@ jobs:
           fi
           git checkout -b "$branch" || true
       - name: Docker Login
-        run: docker login https://ghcr.io --username "$GHCR_USERNAME" --password "$GHCR_TOKEN"
+        run: docker login https://ghcr.io --username "${{ github.actor }}" --password "${{ secrets.GITHUB_TOKEN }}"
       - name: Download latest earthly
         run: "sudo /bin/sh -c 'wget https://github.com/earthly/earthly/releases/latest/download/earthly-linux-amd64 -O /usr/local/bin/earthly && chmod +x /usr/local/bin/earthly'"
       - name: Run test and build
         run: |
-          earthly \
+          EARTHLY_TOKEN=${{ secrets.EARTHLY_TOKEN }} earthly \
           -P \
           --verbose \
           --sat main \
-          --secret DOPPLER_TOKEN=${{ secrets.DOPPLER_TOKEN }} \
+          --secret DOPPLER_PREVIEW_TOKEN=${{ secrets.DOPPLER_PREVIEW_TOKEN }} \
+          --secret DOPPLER_PRODUCTION_TOKEN=${{ secrets.DOPPLER_PRODUCTION_TOKEN }} \
           --secret FLY_ORG=${{ secrets.FLY_ORG }} \
           --secret FLY_REGION=${{ secrets.FLY_REGION }} \
           --secret FLY_API_TOKEN=${{ secrets.FLY_API_TOKEN }} \
