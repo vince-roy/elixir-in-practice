@@ -52,7 +52,6 @@ docker:
   ENV DISABLE_REDIS="1"
   ENV ERL_AFLAGS "-proto_dist inet6_tcp"
   ENV APP_NAME=one
-  ARG EARTHLY_GIT_HASH
   COPY ./scripts/start-app.sh .
   CMD ["./start-app.sh"]
 
@@ -95,6 +94,7 @@ deploy-to-fly:
   ARG GITHUB_PR_NUMBER
   ARG --required REPO_NAME
   ARG --required REPO_OWNER
+  ARG --required EARTHLY_GIT_HASH
   ARG FLY_POSTGRES_ENABLED=true
   RUN alias flyctl="/root/.fly/bin/flyctl"
   COPY ./scripts/maybe-launch.sh maybe-launch.sh
